@@ -1,3 +1,15 @@
+---
+language: 
+  - en
+  - fr
+tags:
+- HR
+datasets:
+- Mydata
+base_model: "GB Classifier"
+---
+
+
 # HR Attrition Prediction API - Futurisys
 
 This project provides a professional-grade REST API designed to predict employee attrition for **Futurisys**. 
