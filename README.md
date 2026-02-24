@@ -1,3 +1,8 @@
+---
+license: apache-2.0
+language:
+- en
+---
 # HR Attrition Prediction API - Futurisys
 
 This project provides a professional-grade REST API designed to predict employee attrition for **Futurisys**. 
@@ -53,5 +58,3 @@ POST /predict
 
 ## Author
 Kevin L. - Data Science & Machine Learning Student
-
-  
