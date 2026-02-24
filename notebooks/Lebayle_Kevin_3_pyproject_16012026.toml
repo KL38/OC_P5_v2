@@ -1,0 +1,20 @@
+[project]
+name = "p4 Kevin Lebayle"
+version = "1.0"
+description = "Attrition in ESN"
+requires-python = ">=3.13"
+
+dependencies = [
+    "pandas>=2.3.3",
+    "numpy>=2.3.5",
+    "matplotlib>=3.10.8",
+    "seaborn>=0.13.2",
+    "scikit-learn>=1.8.0",
+    "shap>=0.50.0",
+    "ipykernel>=6.31.0",
+    "skopt>=0.10.2",
+       ,
+]
+
+
+

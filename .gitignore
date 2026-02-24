@@ -1,0 +1,18 @@
+# Python bytecode (fichiers générés automatiquement)
+__pycache__/
+*.py[cod]
+
+# Environnements virtuels (trop lourds pour Git)
+venv/
+env/
+.env
+
+# Configuration VS Code
+.vscode/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
