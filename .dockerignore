@@ -1,0 +1,10 @@
+.git
+.vscode
+*.csv
+*.xlsx
+test_*.py
+*.ipynb
+.gitignore
+__pycache__
+.env
+.venv
