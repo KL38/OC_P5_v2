@@ -37,4 +37,4 @@ jobs:
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://KLEB38:$HF_TOKEN@huggingface.co/KLEB38/OC_P5_v2 main
+        run: git push --force https://KLEB38:$HF_TOKEN@huggingface.co/spaces/KLEB38/OC_P5 main

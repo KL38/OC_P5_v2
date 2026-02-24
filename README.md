@@ -1,7 +1,10 @@
 ---
-license: apache-2.0
-language:
-- en
+title: HR Attrition Prediction API - Futurisys
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+
 ---
 # HR Attrition Prediction API - Futurisys
 

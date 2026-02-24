@@ -2,7 +2,7 @@
 FROM python:3.13.5-slim
 
 # On définit le répertoire de travail dans le container
-WORKDIR /app
+WORKDIR /code
 
 # On copie d'abord le fichier requirements pour profiter du cache Docker
 COPY requirements.txt .
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # On copie le contenu du dossier local app dans le dossier du container
-COPY ./app
+COPY ./app /code/app
 
 # Port par défaut pour Hugging Face Spaces
 EXPOSE 7860
