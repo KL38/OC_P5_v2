@@ -3,11 +3,31 @@ import pandas as pd
 import joblib
 from app.schemas import EmployeeInput
 import shap
+import os
+import logging
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 app = FastAPI() # On crée l'outil (le guichet)
 
 # Au démarrage, on charge ton pipeline
-model = joblib.load('app/pipeline_rh.joblib')
+model = joblib.load(os.path.join(BASE_DIR, 'pipeline_rh.joblib'))
+
+logger = logging.getLogger(__name__)
+
+known_values = {
+    "departement": ["Consulting", "Commercial", "Ressources Humaines"],
+    "statut_marital": ["Marié(e)", "Célibataire", "Divorcé(e)"],
+    "frequence_deplacement": ["Aucun", "Occasionnel", "Frequent"],
+    "poste": ['Cadre Commercial', 'Assistant de Direction', 'Consultant',
+       'Tech Lead', 'Manager', 'Senior Manager',
+       'Représentant Commercial', 'Directeur Technique',
+       'Ressources Humaines'], 
+    "domaine_etude": ['Infra & Cloud', 'Autre', 'Transformation Digitale', 'Marketing',
+       'Entrepreunariat', 'Ressources Humaines'], 
+}
+
 
 def inconsistency(df):
     if df["departement"] == "Commercial":
@@ -61,9 +81,20 @@ def developpement(df):
 def depart(x):
     if x == 0:
         return "The staff has a LOW probability of resigning"
-    if x==1:
+    if x == 1:
         return "The staff has a HIGH probability of resigning"
 
+
+def interpret_shap(rank: int, value: float) -> str:
+    intensity = {
+        0: "Primary driver",
+        1: "Strong factor",
+        2: "Moderate factor",
+        3: "Contributing factor",
+        4: "Notable factor"
+    }
+    direction = "increases resignation risk" if value > 0 else "decreases resignation risk"
+    return f"{intensity[rank]} — {direction}"
 
 @app.get("/") # La page d'accueil de ton API
 def read_root():
@@ -73,6 +104,11 @@ def read_root():
 def predict(data: EmployeeInput):
     # 1. On transforme le dictionnaire reçu en DataFrame pandas
     df = pd.DataFrame([data.model_dump()])
+
+    for col, known in known_values.items():
+        val = df[col].values[0]
+        if val not in known:
+            logger.warning(f"Unknown value '{val}' for column '{col}' — prediction may be unreliable")
 
     # Encodage binaire non inclus dans le pipeline: 
     df['genre']= df["genre"].map({"M": 1, "F": 0})
@@ -104,17 +140,6 @@ def predict(data: EmployeeInput):
     feature_names = [name.split("__")[-1] for name in preprocessor_step.get_feature_names_out()]
     shap_series = pd.Series(shap_values_obj.values[0], index=feature_names)
     top_factors = shap_series.abs().nlargest(5)
-
-    def interpret_shap(rank: int, value: float) -> str:
-        intensity = {
-            0: "Primary driver",
-            1: "Strong factor",
-            2: "Moderate factor",
-            3: "Contributing factor",
-            4: "Notable factor"
-        }
-        direction = "increases resignation risk" if value > 0 else "decreases resignation risk"
-        return f"{intensity[rank]} — {direction}"
 
         # 3. On renvoie le résultat au format JSON
     return {
