@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import pandas as pd
 import joblib
 from app.schemas import EmployeeInput
+import shap
 
 app = FastAPI() # On crée l'outil (le guichet)
 
@@ -89,9 +90,43 @@ def predict(data: EmployeeInput):
     df["developpement_stagnation"] = df.apply(developpement, axis=1)
     
     # 2. On utilise le pipeline pour faire la prédiction
-    prediction = model.predict(df)
-    
+    proba = model.predict_proba(df)[0][1]
+    prediction = 1 if proba >= 0.37 else 0
+
+    # 3. SHAP explanation
+    preprocessor_step = model[:-1]
+    gb_step = model[-1]
+
+    X_preprocessed = preprocessor_step.transform(df)
+    explainer = shap.TreeExplainer(gb_step)
+    shap_values_obj = explainer(X_preprocessed)
+
+    feature_names = [name.split("__")[-1] for name in preprocessor_step.get_feature_names_out()]
+    shap_series = pd.Series(shap_values_obj.values[0], index=feature_names)
+    top_factors = shap_series.abs().nlargest(5)
+
+    def interpret_shap(rank: int, value: float) -> str:
+        intensity = {
+            0: "Primary driver",
+            1: "Strong factor",
+            2: "Moderate factor",
+            3: "Contributing factor",
+            4: "Notable factor"
+        }
+        direction = "increases resignation risk" if value > 0 else "decreases resignation risk"
+        return f"{intensity[rank]} — {direction}"
+
         # 3. On renvoie le résultat au format JSON
     return {
-        "statut_employe": depart(int(prediction[0]))
+        "statut_employe": depart(prediction),
+        "probability_score": round(proba, 2),
+        "model_threshold": 0.37,
+        "note": "Decision based on a strategic threshold of 0.37, not 0.50",
+        "top_5_factors": {
+            factor: {
+                "interpretation": interpret_shap(rank, shap_series[factor]),
+                "feature_value": float(df[factor].values[0]) if factor in df.columns else "encoded"
+            }
+            for rank, factor in enumerate(top_factors.index)
+        }
     }
