@@ -150,8 +150,7 @@ def predict(data: EmployeeInput):
         "top_5_factors": {
             factor: {
                 "interpretation": interpret_shap(rank, shap_series[factor]),
-                "feature_value": float(df[factor].values[0]) if factor in df.columns else "encoded"
-            }
+                "feature_value": str(df[factor].values[0]) if factor in df.columns and isinstance(df[factor].values[0], str) else float(df[factor].values[0]) if factor in df.columns else "encoded"            }
             for rank, factor in enumerate(top_factors.index)
         }
     }

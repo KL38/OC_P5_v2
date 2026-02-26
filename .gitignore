@@ -16,3 +16,7 @@ env/
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+# Test coverage report
+htmlcov/
+.coverage
