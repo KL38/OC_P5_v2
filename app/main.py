@@ -19,6 +19,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
+TESTING = os.getenv("TESTING", "false").lower() == "true"
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -162,6 +164,8 @@ def run_prediction(df):
     }
 
 def log_prediction(df:pd.DataFrame, result: dict,id_employee:int = None ):
+    if TESTING:
+        return  # on ne logue pas pendant les tests
     with Session(engine) as session:
         factors = list(result["top_5_factors"].keys())
         log = PredictionLog(

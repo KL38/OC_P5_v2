@@ -29,6 +29,7 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TESTING: "true"
         run: |
           python -m pytest tests/ -v --cov=app --cov-report=term-missing
 

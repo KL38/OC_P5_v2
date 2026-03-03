@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # On copie le contenu du dossier local app dans le dossier du container
 COPY ./app /code/app
+COPY ./database /code/database
 
 # Port par défaut pour Hugging Face Spaces
 EXPOSE 7860
