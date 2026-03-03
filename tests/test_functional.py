@@ -233,3 +233,17 @@ def test_logging(caplog):
     assert response.status_code == 200  # l'API répond quand même
     assert "Unknown value 'Logistique' for column 'departement'" in caplog.text
 
+def test_predict_by_id_valid():
+
+    response = client.get("/predict/1")
+    data=response.json()
+
+    assert response.status_code==200
+    assert "statut_employe" in data
+    assert "probability_score" in data
+    assert "top_5_factors" in data
+
+def test_predict_by_id_not_found():
+    response = client.get("/predict/99999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Employee ID not found in database"
