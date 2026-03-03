@@ -5,6 +5,17 @@ from app.schemas import EmployeeInput
 import shap
 import os
 import logging
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from database.create_db import PredictionLog
+from sqlalchemy.orm import Session
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -96,19 +107,11 @@ def interpret_shap(rank: int, value: float) -> str:
     direction = "increases resignation risk" if value > 0 else "decreases resignation risk"
     return f"{intensity[rank]} — {direction}"
 
-@app.get("/") # La page d'accueil de ton API
-def read_root():
-    return {"message": "Welcome to the FUTURISYS HR predictor API"}
-
-@app.post("/predict")
-def predict(data: EmployeeInput):
-    # 1. On transforme le dictionnaire reçu en DataFrame pandas
-    df = pd.DataFrame([data.model_dump()])
-
+def run_prediction(df):
     for col, known in known_values.items():
-        val = df[col].values[0]
-        if val not in known:
-            logger.warning(f"Unknown value '{val}' for column '{col}' — prediction may be unreliable")
+            val = df[col].values[0]
+            if val not in known:
+                logger.warning(f"Unknown value '{val}' for column '{col}' — prediction may be unreliable")
 
     # Encodage binaire non inclus dans le pipeline: 
     df['genre']= df["genre"].map({"M": 1, "F": 0})
@@ -154,3 +157,55 @@ def predict(data: EmployeeInput):
             for rank, factor in enumerate(top_factors.index)
         }
     }
+
+def log_prediction(df:pd.DataFrame, result: dict,id_employee:int = None ):
+    with Session(engine) as session:
+        factors = list(result["top_5_factors"].keys())
+        log = PredictionLog(
+            id_employee=id_employee,
+            **{col: df[col].values[0].item() if hasattr(df[col].values[0], 'item') else df[col].values[0] 
+            for col in df.columns 
+            if col in PredictionLog.__table__.columns.keys()
+            and col != 'id_employee'},
+            prediction=result["statut_employe"],
+            probability_score=result["probability_score"].item() if hasattr(result["probability_score"], 'item') else result["probability_score"],
+            primary_driver=factors[0] if len(factors) > 0 else None,
+            strong_factor=factors[1] if len(factors) > 1 else None,
+            moderate_factor=factors[2] if len(factors) > 2 else None,
+            contributing_factor=factors[3] if len(factors) > 3 else None,
+            notable_factor=factors[4] if len(factors) > 4 else None,
+        )
+        session.add(log)
+        session.commit()
+
+
+
+
+
+@app.get("/") # La page d'accueil de ton API
+def read_root():
+    return {"message": "Welcome to the FUTURISYS HR predictor API"}
+
+@app.get("/predict/{id_employee}")
+def predict_by_id(id_employee: int):
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM employees_full WHERE id_employee = :id"),
+            {"id": id_employee}
+        )
+        row = result.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Employee ID not found in database")
+    
+    df = pd.DataFrame([row._mapping])
+    result = run_prediction(df)
+    log_prediction(df, result, id_employee)
+    return result
+
+@app.post("/predict")
+def predict(data: EmployeeInput):
+    df = pd.DataFrame([data.model_dump()])
+    result= run_prediction(df)
+    log_prediction(df, result)
+    return result
+    
