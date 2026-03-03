@@ -1,15 +1,18 @@
+import sys
+import os
 from fastapi import FastAPI, HTTPException
 import pandas as pd
 import joblib
 from app.schemas import EmployeeInput
 import shap
-import os
 import logging
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from database.create_db import PredictionLog
 from sqlalchemy.orm import Session
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from database.create_db import PredictionLog
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 DATABASE_URL = os.getenv("DATABASE_URL")
