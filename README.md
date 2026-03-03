@@ -64,9 +64,10 @@ This project delivers a complete, containerised ML system:
 - A **Gradient Boosting classifier** trained on HR data and serialised into a Scikit-Learn pipeline with automated preprocessing
 - **Custom feature engineering** — overall satisfaction score, expertise inconsistency (department vs. study domain mismatch), managerial stagnation, and development stagnation signals
 - A **custom classification threshold of 0.37** (tuned for recall on the attrition class rather than the default 0.50)
-- A **FastAPI REST API** with full input validation via Pydantic
+- A **FastAPI REST API** with full input validation via Pydantic, exposing two prediction modes: submit raw employee data (`POST /predict`) or look up an existing employee by ID (`GET /predict/{id_employee}`)
 - **SHAP-based explainability** — every prediction is accompanied by the top 5 most influential features and their direction of impact
-- A complete **CI/CD pipeline** via GitHub Actions that automatically deploys to Hugging Face Spaces on every push to `main`
+- **PostgreSQL prediction logging** — every prediction (inputs, result, SHAP factors) is automatically stored in a `predictions_log` table for auditability
+- A complete **CI/CD pipeline** via GitHub Actions that runs the full test suite on every push before deploying to Hugging Face Spaces
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -77,6 +78,8 @@ This project delivers a complete, containerised ML system:
 * [![scikit-learn][sklearn-badge]][sklearn-url]
 * [![pandas][pandas-badge]][pandas-url]
 * [![SHAP][SHAP-badge]][SHAP-url]
+* [![PostgreSQL][Postgres-badge]][Postgres-url]
+* [![SQLAlchemy][SQLAlchemy-badge]][SQLAlchemy-url]
 * [![Docker][Docker-badge]][Docker-url]
 * [![GitHub Actions][GHActions-badge]][GHActions-url]
 
@@ -89,6 +92,7 @@ This project delivers a complete, containerised ML system:
 ### Prerequisites
 
 - Python 3.13+
+- A PostgreSQL database (local or remote)
 - Docker (for containerised deployment)
 - Git
 
@@ -105,7 +109,11 @@ This project delivers a complete, containerised ML system:
    ```sh
    pip install -r requirements.txt
    ```
-3. Start the API
+3. Create a `.env` file at the project root with your database connection string
+   ```sh
+   DATABASE_URL=postgresql://user:password@host:5432/dbname
+   ```
+4. Start the API
    ```sh
    uvicorn app.main:app --reload
    ```
@@ -117,9 +125,9 @@ This project delivers a complete, containerised ML system:
    ```sh
    docker build -t futurisys-api .
    ```
-2. Run the container
+2. Run the container, passing the database URL as an environment variable
    ```sh
-   docker run -p 7860:7860 futurisys-api
+   docker run -p 7860:7860 -e DATABASE_URL=postgresql://user:password@host:5432/dbname futurisys-api
    ```
    The API is available at `http://localhost:7860`.
 
@@ -131,10 +139,11 @@ This project delivers a complete, containerised ML system:
 
 ### Endpoints
 
-| Method | Endpoint   | Description                              |
-|--------|------------|------------------------------------------|
-| `GET`  | `/`        | Health check — returns a welcome message |
-| `POST` | `/predict` | Predicts employee attrition risk         |
+| Method | Endpoint                  | Description                                                        |
+|--------|---------------------------|--------------------------------------------------------------------|
+| `GET`  | `/`                       | Health check — returns a welcome message                           |
+| `GET`  | `/predict/{id_employee}`  | Fetches an employee from the database by ID and returns a prediction |
+| `POST` | `/predict`                | Predicts employee attrition risk from a submitted JSON payload     |
 
 ### `POST /predict` — Input Schema
 
@@ -260,11 +269,15 @@ Each entry in `top_5_factors` is keyed by the **feature name** and contains:
 
 ## Running Tests
 
-The test suite covers unit tests for feature engineering helpers and functional tests for all API endpoints, including valid predictions, input validation (HTTP 422), and warning logging.
+The test suite covers unit tests for feature engineering helpers and functional tests for all API endpoints, including valid predictions, input validation (HTTP 422), employee lookup by ID, and warning logging.
+
+Setting `TESTING=true` disables database writes so the test suite runs without a live database connection. `DATABASE_URL` is still required to import the app (SQLAlchemy initialises at import time).
 
 ```sh
-pytest tests/ --cov=app
+TESTING=true DATABASE_URL=postgresql://user:password@host:5432/dbname pytest tests/ -v --cov=app --cov-report=term-missing
 ```
+
+The same configuration is used in CI (GitHub Actions): `DATABASE_URL` is injected from a repository secret, and `TESTING` is hardcoded to `"true"` directly in the workflow file.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -310,6 +323,10 @@ Live Demo: [https://huggingface.co/spaces/KLEB38/OC_P5](https://huggingface.co/s
 [pandas-url]: https://pandas.pydata.org/
 [SHAP-badge]: https://img.shields.io/badge/SHAP-FF6B6B?style=for-the-badge&logoColor=white
 [SHAP-url]: https://shap.readthedocs.io/
+[Postgres-badge]: https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
+[Postgres-url]: https://www.postgresql.org/
+[SQLAlchemy-badge]: https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white
+[SQLAlchemy-url]: https://www.sqlalchemy.org/
 [Docker-badge]: https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white
 [Docker-url]: https://www.docker.com/
 [GHActions-badge]: https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white
