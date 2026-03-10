@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from database.create_db import PredictionLog
+from database.create_db import PredictionLog,PredictionLogTest
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -164,11 +164,10 @@ def run_prediction(df):
     }
 
 def log_prediction(df:pd.DataFrame, result: dict,id_employee:int = None ):
-    if TESTING:
-        return  # on ne logue pas pendant les tests
+    LogModel = PredictionLogTest if TESTING else PredictionLog
     with Session(engine) as session:
         factors = list(result["top_5_factors"].keys())
-        log = PredictionLog(
+        log = LogModel(
             id_employee=id_employee,
             **{col: df[col].values[0].item() if hasattr(df[col].values[0], 'item') else df[col].values[0] 
             for col in df.columns 
