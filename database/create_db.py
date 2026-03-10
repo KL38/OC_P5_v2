@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.sql import text
 from sqlalchemy.orm import declarative_base
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 
@@ -18,7 +18,7 @@ class PredictionLog(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_employee = Column(Integer)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Inputs
     genre = Column(String)
@@ -61,10 +61,10 @@ class PredictionLog(Base):
 
 class PredictionLogTest(Base):
     __tablename__ = 'predictions_log_test'
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_employee = Column(Integer)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Inputs
     genre = Column(String)

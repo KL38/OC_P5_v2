@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 from app.main import app
 import logging
+from sqlalchemy import create_engine, text
+import os
 
 client = TestClient(app)
 
@@ -247,3 +249,106 @@ def test_predict_by_id_not_found():
     response = client.get("/predict/99999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Employee ID not found in database"
+
+
+engine_test = create_engine(os.getenv("DATABASE_URL"))
+PAYLOAD = {
+    "Genre": "M",
+    "Statut Marital": "Marié(e)",
+    "Département": "Consulting",
+    "Poste": "Consultant",
+    "Domaine d'étude": "Infra & Cloud",
+    "Fréquence de déplacement": "Occasionnel",
+    "Heures supplémentaires": "Non",
+    "Âge": 32,
+    "Revenu mensuel": 4883,
+    "Nombre d'expériences précédentes": 1,
+    "Années d'expérience totale": 10,
+    "Années dans l'entreprise": 10,
+    "Années dans le poste actuel": 4,
+    "Nombre de formations suivies": 3,
+    "Distance domicile-travail": 7,
+    "Niveau d'éducation": 2,
+    "Années depuis la dernière promotion": 1,
+    "Années sous responsable actuel": 1,
+    "Satisfaction environnement": 4,
+    "Note évaluation précédente": 3,
+    "Satisfaction nature du travail": 3,
+    "Satisfaction équipe": 1,
+    "Satisfaction équilibre pro/perso": 3,
+    "Note évaluation actuelle": 3,
+    "Augmentation salaire précédente": "18%"
+}
+
+class TestDatabase:
+
+    def test_json_logs_to_test_table(self):
+        with engine_test.connect() as conn:
+            before = conn.execute(text("SELECT COUNT(*) FROM predictions_log_test")).scalar()
+        client.post("/predict", json=PAYLOAD)
+        with engine_test.connect() as conn:
+            after = conn.execute(text("SELECT COUNT(*) FROM predictions_log_test")).scalar()
+        assert after == before + 1
+
+    def test_prod_table_not_touched(self):
+        with engine_test.connect() as conn:
+            before = conn.execute(text("SELECT COUNT(*) FROM predictions_log")).scalar()
+        client.post("/predict", json=PAYLOAD)
+        with engine_test.connect() as conn:
+            after = conn.execute(text("SELECT COUNT(*) FROM predictions_log")).scalar()
+        assert after == before
+
+    def test_predict_by_id_logs_to_test_table(self):
+        with engine_test.connect() as conn:
+            before = conn.execute(text("SELECT COUNT(*) FROM predictions_log_test")).scalar()
+        client.get("/predict/1")
+        with engine_test.connect() as conn:
+            after = conn.execute(text("SELECT COUNT(*) FROM predictions_log_test")).scalar()
+        assert after == before + 1
+
+    def test_predictions_log_test_schema(self):
+        with engine_test.connect() as conn:
+            cols = conn.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'predictions_log_test'
+            """)).scalars().all()
+        assert "id_employee" in cols
+        assert "prediction" in cols
+        assert "probability_score" in cols
+        assert "timestamp" in cols
+        assert "primary_driver" in cols
+
+    def test_employees_full_schema(self):
+        with engine_test.connect() as conn:
+            result = conn.execute(text("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns
+                WHERE table_name = 'employees_full'
+            """)).fetchall()
+        col_types = {row[0]: row[1] for row in result}
+        
+        assert col_types["age"] == "bigint"
+        assert col_types["revenu_mensuel"] == "bigint"
+        assert col_types["nombre_experiences_precedentes"] == "bigint"
+        assert col_types["annee_experience_totale"] == "bigint"
+        assert col_types["annees_dans_l_entreprise"] == "bigint"
+        assert col_types["annees_dans_le_poste_actuel"] == "bigint"
+        assert col_types["nb_formations_suivies"] == "bigint"
+        assert col_types["distance_domicile_travail"] == "bigint"
+        assert col_types["niveau_education"] == "bigint"
+        assert col_types["annees_depuis_la_derniere_promotion"] == "bigint"
+        assert col_types["annes_sous_responsable_actuel"] == "bigint"
+        assert col_types["satisfaction_employee_environnement"] == "bigint"
+        assert col_types["satisfaction_employee_equipe"] == "bigint"
+        assert col_types["satisfaction_employee_nature_travail"] == "bigint"
+        assert col_types["satisfaction_employee_equilibre_pro_perso"] == "bigint"
+        assert col_types["note_evaluation_precedente"] == "bigint"
+        assert col_types["note_evaluation_actuelle"] == "bigint"
+        assert col_types["genre"] == "text"
+        assert col_types["departement"] == "text"
+        assert col_types["poste"] == "text"
+        assert col_types["statut_marital"] == "text"
+        assert col_types["domaine_etude"] == "text"
+        assert col_types["frequence_deplacement"] == "text"
+        assert col_types["heure_supplementaires"] == "text"
+        assert col_types["augementation_salaire_precedente"] == "text"
