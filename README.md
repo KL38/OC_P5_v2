@@ -66,7 +66,7 @@ This project delivers a complete, containerised ML system:
 - A **custom classification threshold of 0.37** (tuned for recall on the attrition class rather than the default 0.50)
 - A **FastAPI REST API** with full input validation via Pydantic, exposing two prediction modes: submit raw employee data (`POST /predict`) or look up an existing employee by ID (`GET /predict/{id_employee}`)
 - **SHAP-based explainability** — every prediction is accompanied by the top 5 most influential features and their direction of impact
-- **PostgreSQL prediction logging** — every prediction (inputs, result, SHAP factors) is automatically stored in a `predictions_log` table for auditability
+- **PostgreSQL prediction logging** — every prediction (inputs, result, SHAP factors) is automatically stored in a `predictions_log` table for auditability. A separate `predictions_log_test` table is used in CI/CD and local test runs to keep production data untouched
 - A complete **CI/CD pipeline** via GitHub Actions that runs the full test suite on every push before deploying to Hugging Face Spaces
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -269,9 +269,11 @@ Each entry in `top_5_factors` is keyed by the **feature name** and contains:
 
 ## Running Tests
 
-The test suite covers unit tests for feature engineering helpers and functional tests for all API endpoints, including valid predictions, input validation (HTTP 422), employee lookup by ID, and warning logging.
+The test suite covers:
+- **Unit tests** (`test_unit.py`) — feature engineering helpers (`inconsistency`, `promotion`, `developpement`, `interpret_shap`)
+- **Functional tests** (`test_functional.py`) — all API endpoints (valid predictions, input validation HTTP 422, employee lookup by ID, warning logging), plus a `TestDatabase` class that verifies prediction logs are written to `predictions_log_test`, that the production table is untouched, and that both the log table and the `employees_full` view have the expected schema
 
-Setting `TESTING=true` disables database writes so the test suite runs without a live database connection. `DATABASE_URL` is still required to import the app (SQLAlchemy initialises at import time).
+A live `DATABASE_URL` is required — the test suite includes database write tests. Setting `TESTING=true` routes all prediction logs to `predictions_log_test` instead of the production `predictions_log` table, keeping production data untouched.
 
 ```sh
 TESTING=true DATABASE_URL=postgresql://user:password@host:5432/dbname pytest tests/ -v --cov=app --cov-report=term-missing
