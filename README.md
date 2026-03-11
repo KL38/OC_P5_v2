@@ -48,7 +48,7 @@ pinned: false
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#running-tests">Running Tests</a></li>
-    <li><a href="#contact">Contact</a></li>
+<li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
@@ -78,10 +78,41 @@ This project delivers a complete, containerised ML system:
 * [![scikit-learn][sklearn-badge]][sklearn-url]
 * [![pandas][pandas-badge]][pandas-url]
 * [![SHAP][SHAP-badge]][SHAP-url]
+* [![Supabase][Supabase-badge]][Supabase-url]
 * [![PostgreSQL][Postgres-badge]][Postgres-url]
 * [![SQLAlchemy][SQLAlchemy-badge]][SQLAlchemy-url]
 * [![Docker][Docker-badge]][Docker-url]
 * [![GitHub Actions][GHActions-badge]][GHActions-url]
+
+### Architecture
+
+```mermaid
+flowchart TD
+    CSV["📄 3 CSV Files"]
+
+    subgraph DB["🗄️ Supabase / PostgreSQL"]
+        EMP["👥 Employee tables + Full View"]
+        LOG["📝 predictions_log"]
+    end
+
+    subgraph CICD["🔄 CI/CD Pipeline"]
+        GH["📦 GitHub Repository<br/>(FastAPI code + model)"]
+        ACTIONS["⚙️ GitHub Actions<br/>(pytest → deploy)"]
+        GH -->|push trigger| ACTIONS
+    end
+
+    subgraph HF["🤗 Hugging Face Spaces"]
+        subgraph DOCKER["🐳 Docker Container"]
+            API["⚡ FastAPI<br/>GET /predict/{id_employee}<br/>POST /predict"]
+        end
+    end
+
+    CSV -->|insert_data.py| DB
+    CSV -->|model training| CICD
+    ACTIONS -->|deploy| HF
+    EMP -->|employee lookup| API
+    API -->|log predictions| LOG
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -287,7 +318,7 @@ The same configuration is used in CI (GitHub Actions): `DATABASE_URL` is injecte
 
 ## Contact
 
-Kevin Lebayle — [GitHub @KL38](https://github.com/KL38)
+Kevin L. — [GitHub @KL38](https://github.com/KL38)
 
 Project Link: [https://github.com/KL38/OC_P5_v2](https://github.com/KL38/OC_P5_v2)
 Live Demo: [https://huggingface.co/spaces/KLEB38/OC_P5](https://huggingface.co/spaces/KLEB38/OC_P5)
@@ -325,6 +356,8 @@ Live Demo: [https://huggingface.co/spaces/KLEB38/OC_P5](https://huggingface.co/s
 [pandas-url]: https://pandas.pydata.org/
 [SHAP-badge]: https://img.shields.io/badge/SHAP-FF6B6B?style=for-the-badge&logoColor=white
 [SHAP-url]: https://shap.readthedocs.io/
+[Supabase-badge]: https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white
+[Supabase-url]: https://supabase.com/
 [Postgres-badge]: https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
 [Postgres-url]: https://www.postgresql.org/
 [SQLAlchemy-badge]: https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white
