@@ -33,8 +33,13 @@ jobs:
         run: |
           python -m pytest tests/ -v --cov=app --cov-report=term-missing
 
-  deploy: 
-    needs: build_and_test 
+  deploy:
+    needs: build_and_test
+    # Only a merge to main ships. Without this guard the job also fires on
+    # pull_request events, where it would deploy unreviewed code — it currently
+    # fails there by accident, because checkout leaves a detached HEAD and the
+    # `main` refspec does not resolve.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -45,4 +50,6 @@ jobs:
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://KLEB38:$HF_TOKEN@huggingface.co/spaces/KLEB38/OC_P5 main
+        # HEAD:main rather than main — works whether or not checkout left a
+        # local branch behind.
+        run: git push --force "https://KLEB38:$HF_TOKEN@huggingface.co/spaces/KLEB38/OC_P5" HEAD:main
