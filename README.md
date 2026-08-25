@@ -8,31 +8,25 @@ pinned: false
 ---
 <a id="readme-top"></a>
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-
 <br />
 <div align="center">
   <h3 align="center">HR Attrition Prediction API — Futurisys</h3>
   <p align="center">
     A production-grade REST API that predicts employee attrition using a Gradient Boosting pipeline with SHAP explainability, deployed on Hugging Face Spaces.
     <br />
-    <a href="https://github.com/KL38/OC_P5_v2"><strong>Explore the docs »</strong></a>
     <br />
-    <br />
-    <a href="https://huggingface.co/spaces/KLEB38/OC_P5">View Live Demo</a>
+    <a href="https://huggingface.co/spaces/KLEB38/OC_P5_Frontend_FUTURISYS"><strong>Try the app »</strong></a>
     &middot;
-    <a href="https://github.com/KL38/OC_P5_v2/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://kleb38-oc-p5.hf.space/docs">Swagger UI</a>
     &middot;
-    <a href="https://github.com/KL38/OC_P5_v2/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="#try-it-out">Call the API</a>
   </p>
 </div>
 
 <details>
   <summary>Table of Contents</summary>
   <ol>
+    <li><a href="#try-it-out">Try It Out</a></li>
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
@@ -55,6 +49,41 @@ pinned: false
 
 ---
 
+## Try It Out
+
+Everything below is live — nothing to install.
+
+| What | Where |
+|---|---|
+| **Streamlit interface** — search an employee by ID or fill the form by hand, and read the verdict with its SHAP drivers | [KLEB38/OC_P5_Frontend_FUTURISYS](https://huggingface.co/spaces/KLEB38/OC_P5_Frontend_FUTURISYS) |
+| Interactive Swagger UI | [kleb38-oc-p5.hf.space/docs](https://kleb38-oc-p5.hf.space/docs) |
+| API root (health) | [kleb38-oc-p5.hf.space](https://kleb38-oc-p5.hf.space/) |
+
+A ready-to-send payload lives in [`examples/employee.json`](examples/employee.json) —
+the 25 fields the schema expects:
+
+```bash
+curl -X POST https://kleb38-oc-p5.hf.space/predict \
+  -H "Content-Type: application/json" \
+  -d @examples/employee.json
+```
+
+```json
+{"statut_employe":"The staff has a LOW probability of resigning",
+ "probability_score":0.28,"model_threshold":0.37, "...": "top_5_factors follow"}
+```
+
+Or look an existing employee up by ID, which reads the record from the database:
+
+```bash
+curl https://kleb38-oc-p5.hf.space/predict/1
+```
+
+> **Cold start.** Both Spaces sleep after a period of inactivity; the first call
+> may take ~30 s while the container wakes up.
+
+---
+
 ## About The Project
 
 **Futurisys** is a tech consulting firm used as the business context for this OpenClassrooms Data Science project (Project 5). The objective is to help HR departments proactively identify employees at risk of attrition before they leave.
@@ -66,7 +95,7 @@ This project delivers a complete, containerised ML system:
 - A **custom classification threshold of 0.37** (tuned for recall on the attrition class rather than the default 0.50)
 - A **FastAPI REST API** with full input validation via Pydantic, exposing two prediction modes: submit raw employee data (`POST /predict`) or look up an existing employee by ID (`GET /predict/{id_employee}`)
 - **SHAP-based explainability** — every prediction is accompanied by the top 5 most influential features and their direction of impact
-- **PostgreSQL prediction logging** — every prediction (inputs, result, SHAP factors) is automatically stored in a `predictions_log` table for auditability. A separate `predictions_log_test` table is used in CI/CD and local test runs to keep production data untouched
+- **PostgreSQL prediction logging** — every prediction (inputs, result, SHAP factors) is automatically stored in a `predictions_log` table for auditability. A separate `predictions_log_test` table is used in CI/CD and local test runs to keep production data untouched. Logging is **best-effort**: telemetry is not the product, so an unreachable database is recorded in the application log and never turns a working prediction into an error. `GET /predict/{id_employee}` is the exception — the employee record is its input, so an outage there is reported as a `503`
 - A complete **CI/CD pipeline** via GitHub Actions that runs the full test suite on every push before deploying to Hugging Face Spaces
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -78,7 +107,7 @@ This project delivers a complete, containerised ML system:
 * [![scikit-learn][sklearn-badge]][sklearn-url]
 * [![pandas][pandas-badge]][pandas-url]
 * [![SHAP][SHAP-badge]][SHAP-url]
-* [![Supabase][Supabase-badge]][Supabase-url]
+* [![Neon][Neon-badge]][Neon-url]
 * [![PostgreSQL][Postgres-badge]][Postgres-url]
 * [![SQLAlchemy][SQLAlchemy-badge]][SQLAlchemy-url]
 * [![Docker][Docker-badge]][Docker-url]
@@ -90,7 +119,7 @@ This project delivers a complete, containerised ML system:
 flowchart TD
     CSV["📄 3 CSV Files"]
 
-    subgraph DB["🗄️ Supabase / PostgreSQL"]
+    subgraph DB["🗄️ Neon / PostgreSQL"]
         EMP["👥 Employee tables + Full View"]
         LOG["📝 predictions_log"]
     end
@@ -133,8 +162,8 @@ flowchart TD
 
 1. Clone the repository
    ```sh
-   git clone https://github.com/KL38/OC_P5_v2.git
-   cd OC_P5_v2
+   git clone https://github.com/KL38/OC_P5_ML_MLOPS_HR-attrition-model.git
+   cd OC_P5_ML_MLOPS_HR-attrition-model
    ```
 2. Install dependencies
    ```sh
@@ -320,7 +349,7 @@ The same configuration is used in CI (GitHub Actions): `DATABASE_URL` is injecte
 
 Kevin L. — [GitHub @KL38](https://github.com/KL38)
 
-Project Link: [https://github.com/KL38/OC_P5_v2](https://github.com/KL38/OC_P5_v2)
+Project Link: [https://github.com/KL38/OC_P5_ML_MLOPS_HR-attrition-model](https://github.com/KL38/OC_P5_ML_MLOPS_HR-attrition-model)
 Live Demo: [https://huggingface.co/spaces/KLEB38/OC_P5](https://huggingface.co/spaces/KLEB38/OC_P5)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -338,14 +367,6 @@ Live Demo: [https://huggingface.co/spaces/KLEB38/OC_P5](https://huggingface.co/s
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/KL38/OC_P5_v2.svg?style=for-the-badge
-[contributors-url]: https://github.com/KL38/OC_P5_v2/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/KL38/OC_P5_v2.svg?style=for-the-badge
-[forks-url]: https://github.com/KL38/OC_P5_v2/network/members
-[stars-shield]: https://img.shields.io/github/stars/KL38/OC_P5_v2.svg?style=for-the-badge
-[stars-url]: https://github.com/KL38/OC_P5_v2/stargazers
-[issues-shield]: https://img.shields.io/github/issues/KL38/OC_P5_v2.svg?style=for-the-badge
-[issues-url]: https://github.com/KL38/OC_P5_v2/issues
 [Python-badge]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
 [Python-url]: https://www.python.org/
 [FastAPI-badge]: https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white
@@ -356,8 +377,8 @@ Live Demo: [https://huggingface.co/spaces/KLEB38/OC_P5](https://huggingface.co/s
 [pandas-url]: https://pandas.pydata.org/
 [SHAP-badge]: https://img.shields.io/badge/SHAP-FF6B6B?style=for-the-badge&logoColor=white
 [SHAP-url]: https://shap.readthedocs.io/
-[Supabase-badge]: https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white
-[Supabase-url]: https://supabase.com/
+[Neon-badge]: https://img.shields.io/badge/Neon-00E599?style=for-the-badge&logo=postgresql&logoColor=white
+[Neon-url]: https://neon.com/
 [Postgres-badge]: https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
 [Postgres-url]: https://www.postgresql.org/
 [SQLAlchemy-badge]: https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white
