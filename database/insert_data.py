@@ -40,14 +40,21 @@ df_sondage = df_sondage.rename(columns={"code_sondage": "id_employee"})
 df_eval = df_eval.rename(columns={"eval_number": "id_employee"})
 
 with engine.connect() as conn:
-    # Supprimer les FK si elles existent déjà
+    # Supprimer les FK si elles existent déjà. ALTER TABLE IF EXISTS is what
+    # makes this script runnable against an empty database: the tables are only
+    # created further down by to_sql(), so on a fresh instance there is nothing
+    # to alter yet.
     conn.execute(
         text(
-            "ALTER TABLE employees_sondage DROP CONSTRAINT IF EXISTS fk_sondage_employee"
+            "ALTER TABLE IF EXISTS employees_sondage "
+            "DROP CONSTRAINT IF EXISTS fk_sondage_employee"
         )
     )
     conn.execute(
-        text("ALTER TABLE employees_eval DROP CONSTRAINT IF EXISTS fk_eval_employee")
+        text(
+            "ALTER TABLE IF EXISTS employees_eval "
+            "DROP CONSTRAINT IF EXISTS fk_eval_employee"
+        )
     )
     conn.commit()
 
