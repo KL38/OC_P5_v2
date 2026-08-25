@@ -20,3 +20,6 @@ Thumbs.db
 # Test coverage report
 htmlcov/
 .coverage
+# Source screen recordings — the exported GIF in docs/ is what ships
+*.webm
+*.mp4

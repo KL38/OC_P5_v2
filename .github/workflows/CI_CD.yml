@@ -47,9 +47,34 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      # Uploaded through the Hub API rather than `git push`: the Space rejects
+      # binary files pushed over git (they must go through Xet), and the API
+      # also lets us keep notebooks, coverage reports and tests out of the
+      # production image.
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        # HEAD:main rather than main — works whether or not checkout left a
-        # local branch behind.
-        run: git push --force "https://KLEB38:$HF_TOKEN@huggingface.co/spaces/KLEB38/OC_P5" HEAD:main
+        run: |
+          pip install --quiet huggingface_hub
+          python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              folder_path=".",
+              repo_id="KLEB38/OC_P5",
+              repo_type="space",
+              ignore_patterns=[
+                  ".git*",
+                  ".github/*",
+                  "__pycache__/*",
+                  "*/__pycache__/*",
+                  "*.pyc",
+                  "htmlcov/*",
+                  "notebooks/*",
+                  "tests/*",
+                  ".env",
+              ],
+          )
+          EOF
