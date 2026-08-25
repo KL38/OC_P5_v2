@@ -59,6 +59,14 @@ Everything below is live — nothing to install.
 | Interactive Swagger UI | [kleb38-oc-p5.hf.space/docs](https://kleb38-oc-p5.hf.space/docs) |
 | API root (health) | [kleb38-oc-p5.hf.space](https://kleb38-oc-p5.hf.space/) |
 
+<div align="center">
+  <img src="docs/demo.gif" width="900"
+       alt="Looking an employee up by ID: the verdict, the probability score against the 0.37 threshold, and the five SHAP factors with their direction of impact" />
+  <br />
+  <em>Employee #1 looked up by ID — 59 % against a 0.37 threshold, and the five
+  factors that drove the verdict, colour-coded by direction.</em>
+</div>
+
 A ready-to-send payload lives in [`examples/employee.json`](examples/employee.json) —
 the 25 fields the schema expects:
 
